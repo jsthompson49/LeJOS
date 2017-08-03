@@ -3,18 +3,24 @@ package edu.lejos;
 import java.io.File;
 import java.util.UUID;
 
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-
 import edu.camera.EdgeCamera;
 import edu.camera.FaceDetector;
 
 import lejos.nxt.Motor;
 import lejos.nxt.remote.RemoteMotor;
 
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public class RemoteScan {
 	
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteScan.class);
+    
 	private static final String CAMERA_PATH = "/home/pi/camera/data";
 	private static final long SCAN_INTERVAL = 500;
 	private static final long MOTOR_INTERVAL = 500;
@@ -43,16 +49,18 @@ public class RemoteScan {
 			while(true) {
 				Thread.sleep(MOTOR_INTERVAL);
 				for(int i = 0;i < monitors.length;i++) {
+					LOGGER.trace("Processing motor monitors");
 					monitors[i].process();
 				}
 				if((loopCount % CLEANUP_LOOP_COUNT) == 0) {
+					LOGGER.trace("Cleannig image files in separate thread");
 					new Thread(imageFileCleaner).start();
 				}
 				loopCount++;
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Exception from main loop", e);
 		}
 		System.exit(0);
 	}
@@ -80,7 +88,8 @@ public class RemoteScan {
 		
 		public void process() {			
 			int tachoCount = motor.getTachoCount();
-			//System.out.println("Motor{" + motor.getId() + "}: tacho=" + tachoCount + " limitAngle=" + motor.getLimitAngle() + " stalled=" + motor.isStalled());
+			LOGGER.debug("Motor-{}: tacho={} limitAngle={} stalled={}" , 
+					motor.getId(), tachoCount, motor.getLimitAngle(), motor.isStalled());
 			if(tachoCount <= minTacho) {
 				motor.rotate(angle, true /* immediate Return */);								
 			}
@@ -108,7 +117,7 @@ public class RemoteScan {
 		        if(image != null) {
 					MatOfRect faces = faceDetector.detect(image);
 			        Rect[] rectangles = faces.toArray();
-			        System.out.println(new java.util.Date() + " Faces Detected: count=" + rectangles.length);
+			        LOGGER.info("Faces Detected: count={}", rectangles.length);
 			        if(rectangles.length > 0) {
 			            faceDetector.drawDetected(image, faces);
 			        	camera.saveImage(image, UUID.randomUUID().toString());
@@ -121,6 +130,7 @@ public class RemoteScan {
 					}
 					catch (InterruptedException ie) {
 						// Ignore
+						LOGGER.info("Thread interrupted", ie);
 					}
 		        }
 			}
@@ -146,11 +156,10 @@ public class RemoteScan {
 			File imageFileDirectory = new File(path);
 			File[] stale = imageFileDirectory.listFiles(f -> f.lastModified() < (System.currentTimeMillis() - staleMillis));
 			int count = (stale == null) ? 0 : stale.length;
-			System.out.println("Cleaning stale files: count=" + count);
+			LOGGER.info("Cleaning stale files: count={}", count);
 			for(int i = 0;i < count;i++) {
 				stale[i].delete();
 			}
 		}
 	}
-
 }

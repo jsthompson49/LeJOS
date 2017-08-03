@@ -4,10 +4,14 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EdgeCamera implements AutoCloseable {
 
-	static {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EdgeCamera.class);
+
+    static {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
  	}
 	
@@ -31,16 +35,16 @@ public class EdgeCamera implements AutoCloseable {
 		Mat image = null;
         
         if(camera.isOpened()){
-            //System.out.println("Camera Opened, reading image");
+            LOGGER.trace("Camera Opened, reading image");
         	image = new Mat();
         	boolean read = camera.read(image);
-            System.out.println("Camera read opeation: " + (read ? "success" : "fail"));
+            LOGGER.info("Camera read opeation: success={}", read);
             if(!read) {
             	image = null;
             }            
         }
         else {
-            System.out.println("Camera Closed");        	
+            LOGGER.info("Camera Closed");        	
         }
         
         return image;

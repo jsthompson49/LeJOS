@@ -10,10 +10,14 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FaceDetector {
 
-	static {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EdgeCamera.class);
+
+    static {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
  	}
 	
@@ -50,14 +54,16 @@ public class FaceDetector {
 		faceCascade.detectMultiScale(grayImage, faces, 1.3 /* scaleFactor */,
 				5 /* minNeighbors */, 0 | Objdetect.CASCADE_SCALE_IMAGE,
 				new Size(minFaceSize, minFaceSize), new Size(maxFaceSize, maxFaceSize));
+
+		LOGGER.debug("Detected: {}", faces.size());
 				
 		return faces;
 	}
 		
 	public void drawDetected(Mat image, MatOfRect detected) {
 		Rect[] rectangles = detected.toArray();
-		//System.out.println("Detected=" + rectangles.length);
 		for (int i = 0; i < rectangles.length; i++) {
+			LOGGER.debug("Drawing detected: {}", rectangles[i]);
 			Imgproc.rectangle(image, rectangles[i].tl(), rectangles[i].br(), new Scalar(0, 255, 0), 3);
 		}
 	}
